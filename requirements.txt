@@ -1,0 +1,50 @@
+# EOPD-SR: Entity-Ontology and Path-Dependency Subgraph Retrieval
+# Knowledge Graph-Augmented Reasoning - Dependencies
+
+# === LLM & Embeddings ===
+openai>=1.30.0                  # OpenAI API client (GPT-4o-mini, text-embedding-3-small)
+tiktoken>=0.7.0                 # Token counting for OpenAI models
+
+# === Knowledge Graph ===
+SPARQLWrapper>=2.0.0            # SPARQL endpoint queries (Wikidata)
+rdflib>=7.0.0                   # RDF graph manipulation
+pyjedai>=1.0.0                  # Entity resolution / matching (optional)
+
+# === Graph Processing ===
+networkx>=3.2                   # Graph data structure and algorithms
+                            #   - BFS for ontology subgraph extraction (E-Stage)
+                            #   - Dijkstra for reranking (D-Stage)
+                            #   - Path enumeration and pruning (P-Stage)
+
+# === Sparse Retrieval (BM25) ===
+rank_bm25>=0.2.2                # BM25 scoring for relation linking (P-Stage)
+whoosh>=2.7.4                   # Full-text search indexing (alternative BM25)
+
+# === Fuzzy Matching ===
+thefuzz>=0.22.0                 # Fuzzy string matching for entity linking (E-Stage)
+python-Levenshtein>=0.25.0      # Levenshtein distance (speeds up thefuzz)
+
+# === Dense Retrieval (Bi-Encoder) ===
+sentence-transformers>=3.0.0    # Bi-encoder model infrastructure
+faiss-cpu>=1.8.0                # Efficient similarity search for dense retrieval
+
+# === Data & Evaluation ===
+datasets>=2.20.0                # HuggingFace datasets (WebQSP, CWQ, GrailQA, EntityQuestions)
+pandas>=2.2.0                   # Data manipulation and result analysis
+numpy>=1.26.0                   # Numerical operations
+scikit-learn>=1.5.0             # Evaluation metrics utilities
+
+# === Utilities ===
+tqdm>=4.66.0                    # Progress bars
+pyyaml>=6.0.1                   # Configuration file parsing
+python-dotenv>=1.0.1            # Environment variable management (.env files)
+aiohttp>=3.9.0                  # Async HTTP for batch API calls
+tenacity>=8.3.0                 # Retry logic for API calls
+requests>=2.32.0                # HTTP requests
+
+# === GraphRAG (Microsoft) ===
+graphrag>=0.5.0                 # Microsoft GraphRAG for knowledge graph reasoning
+
+# === Logging & Monitoring ===
+loguru>=0.7.0                   # Structured logging
+rich>=13.7.0                    # Rich console output and tables
