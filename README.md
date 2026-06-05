@@ -1,6 +1,5 @@
 # EOPD-SR: Entity-Ontology and Path-Dependency Subgraph Retrieval for Knowledge Graph–Augmented Reasoning
 
-论文复现代码实现。
 
 ## 项目概述
 
