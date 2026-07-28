@@ -26,19 +26,36 @@ python run_benchmark.py --table 1 --max_samples 100
 
 ### Manual Download (Optional)
 
-If you prefer to download datasets manually, place them as JSON/JSONL files in `./data/raw/`:
+Automatic download through the HuggingFace `datasets` library is the
+recommended method (see above).
 
-```bash
-mkdir -p data/raw
+For offline or air-gapped environments, datasets must be converted to the
+normalized JSONL format expected by `data/dataloader.py` and placed in
+`./data/raw/` using the following naming convention:
 
-# Option A: Use HuggingFace CLI
-pip install huggingface_hub
-huggingface-cli download rmanluo/RoG-webqsp --repo-type dataset --local-dir ./data/raw/webqsp
-huggingface-cli download rmanluo/RoG-cwq --repo-type dataset --local-dir ./data/raw/cwq
-huggingface-cli download Salesforce/grailqa --repo-type dataset --local-dir ./data/raw/grailqa
-huggingface-cli download dwaraknath/entityquestions --repo-type dataset --local-dir ./data/raw/entityquestions
+```text
+data/raw/webqsp_test.jsonl
+data/raw/cwq_test.jsonl
+data/raw/grailqa_val.jsonl
+data/raw/entityquestions_test.jsonl
+```
 
-# Option B: Download from original sources (see links above)
+Each record must contain at least a `question` field and an `answer` or
+`answers` field. Depending on the dataset, records may additionally contain
+`answer_ids`, `topic_entities`, `topic_entity_names`, and `sparql_query`.
+
+Directly downloading a HuggingFace dataset repository with
+`huggingface-cli download` does not automatically produce these normalized
+JSONL files. Therefore, automatic loading through `datasets` is recommended.
+
+If you need to prepare files manually, you can use the HuggingFace `datasets`
+library in a Python script:
+
+```python
+from datasets import load_dataset
+
+ds = load_dataset("rmanluo/RoG-webqsp", split="test")
+ds.to_json("data/raw/webqsp_test.jsonl")
 ```
 
 ### Freebase Knowledge Graph Setup (Required for WebQSP, CWQ, GrailQA)
@@ -48,8 +65,8 @@ Three of the four datasets (WebQSP, CWQ, GrailQA) require a local Freebase SPARQ
 #### Step 1: Install Virtuoso Open-Source Edition
 
 ```bash
-# Option A: Docker (recommended)
-docker pull openlink/virtuoso-opensource-7:latest
+# Option A: Docker (recommended — pin to a specific version tag)
+docker pull openlink/virtuoso-opensource-7:7.2.11
 mkdir -p ~/virtuoso-data
 
 # Option B: Build from source (Ubuntu/Debian)
@@ -57,41 +74,51 @@ mkdir -p ~/virtuoso-data
 sudo apt-get install virtuoso-opensource
 ```
 
+> **Reproducibility note:** Record the exact Virtuoso version and Freebase dump
+> checksum you use, because different snapshots may produce different SPARQL
+> query results.
+
 #### Step 2: Download Freebase Data Dump
 
-The Freebase data dump (RDF format) is available from Google:
+The experiments reported in this paper use the Google Freebase RDF dump
+(`freebase-rdf-latest.gz`, approximately 25 GB compressed). Download it from:
+
+- **Primary:** https://developers.google.com/freebase (archived Google page)
+- **Mirror:** https://github.com/google/freebase-rdf-dump
 
 ```bash
-# Download the Freebase RDF dump (~25GB compressed)
-# Source: https://developers.google.com/freebase (archived)
-# Alternative mirror: https://github.com/google/freebase-rdf-dump
-
-# Or use the pre-processed version from the WebQSP repository:
-# https://github.com/YihSun/WebQSP/tree/main/data
+# Example (replace with the actual current URL from the sources above):
+wget https://storage.googleapis.com/freebase-public/rdf/freebase-rdf-latest.gz
 ```
+
+> **Note:** Some datasets (WebQSP) also ship pre-processed Freebase subgraphs
+> in their original repositories. Check
+> [YihSun/WebQSP](https://github.com/YihSun/WebQSP/tree/main/data) for
+> pre-extracted data if a full Freebase dump is not feasible.
 
 #### Step 3: Load Freebase into Virtuoso
 
 ```bash
-# Using Docker:
+# Using Docker (use the same version tag as Step 1):
 docker run -d \
   --name virtuoso \
   -p 1111:1111 \
   -p 8890:8890 \
   -v ~/virtuoso-data:/database \
   -v /path/to/freebase-rdf:/freebase \
-  openlink/virtuoso-opensource-7:latest
+  openlink/virtuoso-opensource-7:7.2.11
 
-# Load the Freebase dump via isql:
+# Load the Freebase dump via isql (this may take several hours):
 docker exec -it virtuoso isql 1111 dba dba
-SQL> ld_dir('/freebase', '*.gz', 'http://freebase.org');
+SQL> ld_dir('/freebase', 'freebase-rdf-latest.gz', 'http://freebase.org');
 SQL> rdf_loader_run();
+SQL> checkpoint;
 ```
 
 #### Step 4: Verify Freebase Endpoint
 
 ```bash
-# Test the SPARQL endpoint
+# Test the SPARQL endpoint — should return JSON with 5 triples
 curl -X POST http://localhost:8890/sparql \
   -H "Accept: application/json" \
   -d "query=SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 5"
@@ -105,6 +132,19 @@ FREEBASE_ENDPOINT=http://localhost:8890/sparql
 ```
 
 > **Note:** If you do not have Freebase available, you can still run experiments on the **EntityQuestions** dataset only (uses public Wikidata endpoint, no setup required).
+
+### Third-Party Licenses
+
+The MIT License in this repository applies only to the EOPD-SR source code.
+The benchmark datasets, Freebase, Wikidata, pretrained models, and external
+services remain subject to their respective licenses and terms of use:
+
+- **WebQSP** — [Apache License 2.0](https://github.com/YihSun/WebQSP)
+- **CWQ** — [Apache License 2.0](https://github.com/princeton-nlp/ComplexWebQuestions)
+- **GrailQA** — [Apache License 2.0](https://github.com/salesforce/grailqa)
+- **EntityQuestions** — [MIT License](https://github.com/princeton-nlp/EntityQuestions)
+- **Freebase** — [Creative Commons Attribution (CC-BY)](https://developers.google.com/freebase)
+- **Wikidata** — [Creative Commons CC0](https://www.wikidata.org/wiki/Wikidata:Copyright)
 
 ## 项目概述
 
